@@ -28,15 +28,38 @@ RESULTS_ROOT = REPO_ROOT / "results"
 DATA_ROOT = RESULTS_ROOT / "data"
 RUNS_ROOT = RESULTS_ROOT / "runs"
 
-CODE_ROOT = Path("/data/Agent_Defense/code")
+def _candidate_existing_paths(*paths: Path) -> list[Path]:
+    return [path for path in paths if path.exists()]
+
+
+def _first_existing_path(*paths: Path) -> Path:
+    existing = _candidate_existing_paths(*paths)
+    if existing:
+        return existing[0]
+    return paths[0]
+
+
+LOCAL_CODE_ROOT = REPO_ROOT.parent.parent / "code"
+CODE_ROOT = _first_existing_path(
+    Path("/data/Agent_Defense/code"),
+    LOCAL_CODE_ROOT,
+)
 SQUIRL_ROOT = CODE_ROOT / "SQUIRL"
 EVOLVE_TRAIN_PATH = SQUIRL_ROOT / "scripts" / "evolve_train.py"
 
-SOURCE_BENIGN_PATH = Path("/data/AGrail4Agent/DAS/data/safe-os/benign.json")
-SOURCE_UNSAFE_PATH = CODE_ROOT / "Agent-SafetyBench-main" / "data" / "released_data_train.json"
+SOURCE_BENIGN_PATH = _first_existing_path(
+    Path("/data/AGrail4Agent/DAS/data/safe-os/benign.json"),
+    CODE_ROOT / "AGrail4Agent-main" / "DAS" / "data" / "safe-os" / "benign.json",
+)
+SOURCE_UNSAFE_PATH = _first_existing_path(
+    CODE_ROOT / "Agent-SafetyBench-main" / "data" / "released_data_train.json",
+)
 SOURCE_SKILLS_DB = SQUIRL_ROOT / "runs" / "run_v5_full_mass_new" / "skills_evolved"
 
-BASELINE_PROGRESS_PATH = SQUIRL_ROOT / "runs" / "safeos_smoketest_v5" / "checkpoints" / "progress.json"
+BASELINE_PROGRESS_PATH = _first_existing_path(
+    SQUIRL_ROOT / "runs" / "safeos_smoketest_v5" / "checkpoints" / "progress.json",
+    SQUIRL_ROOT / "runs" / "run_v5_full_mass_new" / "checkpoints" / "progress.json",
+)
 HISTORICAL_PROGRESS_PATH = SQUIRL_ROOT / "runs" / "run_v5_full_mass_new" / "checkpoints" / "progress.json"
 
 FULL_DATA_PATH = DATA_ROOT / "combined_safeos_full.json"
@@ -76,7 +99,7 @@ def load_json(path: Path) -> Any:
 def write_json(path: Path, payload: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
-        json.dump(payload, handle, ensure_ascii=False, indent=2, default=str)
+        json.dump(payload, handle, ensure_ascii=True, indent=2, default=str)
 
 
 def _extract_benign_environment(item: dict[str, Any]) -> tuple[str, str]:
